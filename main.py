@@ -28,6 +28,36 @@ def book():
 @app.route('/estadisticas')
 def estadisticas():
     return render_template('estadisticas.html')
+
+@app.route('/api/autores_mas_pedidos', methods=['GET'])
+def get_top_authors():
+    pipeline = [
+        {"$unwind": "$LIBROS_PRESTADOS"},
+        {"$lookup": {
+            "from": "libros",
+            "let": {"cod_barras": "$LIBROS_PRESTADOS.COD_BARRAS"},
+            "pipeline": [
+                {"$match": {"$expr": {"$eq": ["$COD_BARRAS", "$$cod_barras"]}}},
+                {"$limit": 1}
+            ],
+            "as": "libro"
+        }},
+        {"$unwind": "$libro"},
+        {"$group": {"_id": "$libro.AUTOR", "count": {"$sum": 1}}},
+        {"$match": {"_id": {"$ne": None}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    resultados = list(usuarios.aggregate(pipeline))
+    
+    # Imprimir los autores más pedidos como texto en la consola del servidor
+    for autor in resultados:
+        print(f"Autor: {autor['_id']}, Cantidad: {autor['count']}")
+    
+    # Devolver una respuesta JSON con los resultados
+    return jsonify({"autoresMasPedidos": resultados})
+
+    ####FINNNNNNNNN!!!
     
 @app.route('/api/usuarios', methods=['GET'])
 def get_usuarios():

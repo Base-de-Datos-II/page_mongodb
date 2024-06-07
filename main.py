@@ -30,6 +30,28 @@ def estadisticas():
     return render_template('estadisticas.html')
 
 @app.route('/api/autores_mas_pedidos', methods=['GET'])
+#carrusel
+@app.route('/api/est', methods=['GET'])
+def obtener_estadisticas():
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$TIPO_EJEMPLAR",
+                "count": {"$sum": 1}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,  # no id
+                "TIPO_EJEMPLAR": "$_id",  
+                "count": 1
+            }
+        }
+    ]
+    resultados = list(libros.aggregate(pipeline))
+    return jsonify(resultados)
+
+
 def get_top_authors():
     pipeline = [
         {"$unwind": "$LIBROS_PRESTADOS"},

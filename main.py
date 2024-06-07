@@ -80,19 +80,58 @@ def get_libros():
 
 
 def get_edades_lectores():
-    now = datetime.now()
-    usuarios_con_edad = usuarios.find({"FECHA_NACIMIENTO": {"$exists": True}})
-    edades_lectores = [(now.year - datetime.utcfromtimestamp(usuario["FECHA_NACIMIENTO"].timestamp()).year) for usuario in usuarios_con_edad]
+    pipeline = [
+        {
+            "$addFields": {
+                "age": {
+                    "$subtract": [{"$year": "$$NOW"}, {"$year": "$FECHA_NACIMIENTO"}]
+                }
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "age_ranges": {
+                    "$push": {
+                        "age": "$age",
+                        "range": {
+                            "$switch": {
+                                "branches": [
+                                    {"case": {"$lt": ["$age", 18]}, "then": "<18"},
+                                    {"case": {"$and": [{"$gte": ["$age", 18]}, {"$lte": ["$age", 25]}]}, "then": "18-25"},
+                                    {"case": {"$and": [{"$gte": ["$age", 26]}, {"$lte": ["$age", 35]}]}, "then": "26-35"},
+                                    {"case": {"$and": [{"$gte": ["$age", 36]}, {"$lte": ["$age", 50]}]}, "then": "36-50"},
+                                    {"case": {"$gt": ["$age", 50]}, "then": "50+"}
+                                ],
+                                "default": "Unknown"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$unwind": "$age_ranges"
+        },
+        {
+            "$group": {
+                "_id": "$age_ranges.range",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+
+    result = list(usuarios.aggregate(pipeline))
     edades_lectores_data = {
         "ageRanges": ["<18", "18-25", "26-35", "36-50", "50+"],
-        "counts": [
-            sum(1 for edad in edades_lectores if edad < 18),
-            sum(1 for edad in edades_lectores if 18 <= edad <= 25),
-            sum(1 for edad in edades_lectores if 26 <= edad <= 35),
-            sum(1 for edad in edades_lectores if 36 <= edad <= 50),
-            sum(1 for edad in edades_lectores if edad > 50)
-        ]
+        "counts": [0, 0, 0, 0, 0]
     }
+    range_map = {"<18": 0, "18-25": 1, "26-35": 2, "36-50": 3, "50+": 4}
+
+    for item in result:
+        if item["_id"] in range_map:
+            edades_lectores_data["counts"][range_map[item["_id"]]] = item["count"]
+
     return edades_lectores_data
 
 @app.route('/api/edades_lectores', methods=['GET'])
@@ -105,38 +144,38 @@ def get_edades_lectores_api():
 
 
 def get_libros_mas_pedidos():
-    libros_mas_pedidos = usuarios.aggregate([
+    pipeline = [
         {"$unwind": "$LIBROS_PRESTADOS"},
-        {"$group": {
-            "_id": "$LIBROS_PRESTADOS.COD_BARRAS",
-            "count": {"$sum": 1}
-        }},
+        {"$match": {"LIBROS_PRESTADOS.COD_BARRAS": {"$ne": None, "$ne": "", "$ne": 0}}},
+        {
+            "$group": {
+                "_id": "$LIBROS_PRESTADOS.COD_BARRAS",
+                "count": {"$sum": 1}
+            }
+        },
         {"$sort": {"count": -1}},
-        {"$limit": 10}
-    ])
-    
-    # Obtener los códigos de barras de los libros más pedidos
-    codigos_barras_mas_pedidos = [libro["_id"] for libro in libros_mas_pedidos]
-    
-    # Buscar los títulos de los libros en la colección "libros"
-    libros_mas_pedidos_data = libros.find(
-        {"COD_BARRAS": {"$in": codigos_barras_mas_pedidos}, "TITULO": {"$ne": "No Title"}},
-        {"TITULO": 1, "_id": 0}
-    )
-    
-    # Construir un diccionario para contar las ocurrencias de cada título
-    count_dict = {}
-    for libro in libros_mas_pedidos_data:
-        titulo = libro["TITULO"]
-        if titulo in count_dict:
-            count_dict[titulo] += 1
-        else:
-            count_dict[titulo] = 1
-    
-    # Construir la lista de resultados
-    libros_mas_pedidos_result = [{"titulo": titulo, "count": count_dict[titulo]} for titulo in count_dict]
-    
-    return libros_mas_pedidos_result
+        {"$limit": 10},
+        {
+            "$lookup": {
+                "from": "libros",
+                "localField": "_id",
+                "foreignField": "COD_BARRAS",
+                "as": "libro"
+            }
+        },
+        {"$unwind": {"path": "$libro", "preserveNullAndEmptyArrays": True}},
+        {
+            "$project": {
+                "_id": 0,
+                "titulo": "$libro.TITULO",
+                "count": 1
+            }
+        }
+    ]
+
+    result = list(usuarios.aggregate(pipeline))
+    return result
+
 
 @app.route('/api/libros_mas_pedidos', methods=['GET'])
 def get_libros_mas_pedidos_api():

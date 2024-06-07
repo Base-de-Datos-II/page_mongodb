@@ -29,29 +29,8 @@ def book():
 def estadisticas():
     return render_template('estadisticas.html')
 
+
 @app.route('/api/autores_mas_pedidos', methods=['GET'])
-#carrusel
-@app.route('/api/est', methods=['GET'])
-def obtener_estadisticas():
-    pipeline = [
-        {
-            "$group": {
-                "_id": "$TIPO_EJEMPLAR",
-                "count": {"$sum": 1}
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,  # no id
-                "TIPO_EJEMPLAR": "$_id",  
-                "count": 1
-            }
-        }
-    ]
-    resultados = list(libros.aggregate(pipeline))
-    return jsonify(resultados)
-
-
 def get_top_authors():
     pipeline = [
         {"$unwind": "$LIBROS_PRESTADOS"},
@@ -72,10 +51,35 @@ def get_top_authors():
     ]
     resultados = list(usuarios.aggregate(pipeline))
     
+    # Imprimir los autores más pedidos como texto en la consola del servidor
+    for autor in resultados:
+        print(f"Autor: {autor['_id']}, Cantidad: {autor['count']}")
+    
     # Devolver una respuesta JSON con los resultados
     return jsonify({"autoresMasPedidos": resultados})
 
-    ####FINNNNNNNNN!!!
+#carrusel
+@app.route('/api/est', methods=['GET'])
+def obtener_estadisticas():
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$TIPO_EJEMPLAR",
+                "count": {"$sum": 1}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,  # no id
+                "TIPO_EJEMPLAR": "$_id",  
+                "count": 1
+            }
+        }
+    ]
+    resultados = list(libros.aggregate(pipeline))
+    return jsonify(resultados)
+        ####FINNNNNNNNN!!!
+
     
 @app.route('/api/usuarios', methods=['GET'])
 def get_usuarios():

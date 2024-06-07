@@ -47,6 +47,9 @@
         <div class="chart-container">
             <canvas id="edadesLectoresChart"></canvas>
         </div>
+        <div class="chart-container">
+            <canvas id="autoresMasPedidosChart"></canvas>
+        </div>
     </div>
 {% endblock %}
 
@@ -58,7 +61,7 @@
             fetch(endpoint)
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Data obtenida:", data);
+                    console.log("Data obtenida:", data); // Agregado para verificar los datos recibidos
                     var labels, counts;
                     if (data.librosMasPedidos) {
                         labels = data.librosMasPedidos.map(libro => libro.titulo);
@@ -66,6 +69,9 @@
                     } else if (data.edadesLectores) {
                         labels = data.edadesLectores.ageRanges;
                         counts = data.edadesLectores.counts;
+                    } else if (data.autoresMasPedidos) {
+                        labels = data.autoresMasPedidos.map(autor => autor._id);
+                        counts = data.autoresMasPedidos.map(autor => autor.count);
                     }
                     renderChart(canvasId, labels, counts, label, type);
                 })
@@ -111,5 +117,6 @@
         // Llamar a las funciones para obtener datos y renderizar gráficos
         fetchAndRenderCharts('/api/libros_mas_pedidos', 'librosMasPedidosChart', 'Libros Más Pedidos', 'bar');
         fetchAndRenderCharts('/api/edades_lectores', 'edadesLectoresChart', 'Edades de los Lectores', 'pie');
+        fetchAndRenderCharts('/api/autores_mas_pedidos', 'autoresMasPedidosChart', 'Autores Más Pedidos', 'bar');
     </script>
 {% endblock %}

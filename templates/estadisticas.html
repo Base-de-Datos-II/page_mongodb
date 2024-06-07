@@ -5,52 +5,72 @@
 {% endblock %}
 
 {% block content %}
-    <style>
-        .chart-container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        body {
-            background-color: #f8f9fa;  /* Light grey background for the whole page */
-        }
-
-
-.card {
-    margin-bottom: 20px;
-}
-
-.card-header {
-    font-weight: bold;
-}
-
-.canvas-container {
+<style>
+    .chart-container{
     position: relative;
-    height: 40vh;
-    width: 80vw;
+    height: 400px;
 }
-    </style>
-    <div class="container">
-        <h1>Estadísticas de la Biblioteca</h1>
-        <div class="chart-container">
-            <canvas id="librosMasPedidosChart"></canvas>
+
+.chart-container-2 {
+    position: relative;
+    height: 400px;
+    width:  100%;;
+}
+
+    .card {
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        font-weight: bold;
+    }
+</style>
+
+<div class="container">
+    <h1 class="text-center mb-4">Estadísticas de la Biblioteca</h1>
+    <div class="row">
+        <div class="col-md-12"> <!-- Cambio de col-md-6 a col-md-12 -->
+            <div class="card">
+                <div class="card-header">
+                    Libros Más Pedidos
+                </div>
+                <div class="card-body">
+                    <div class="chart-container-2"> <!-- Mantener la clase chart-container-2 -->
+                        <canvas id="librosMasPedidosChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="chart-container">
-            <canvas id="edadesLectoresChart"></canvas>
-        </div>
-        <div class="chart-container">
-            <canvas id="autoresMasPedidosChart"></canvas>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Edades de los Lectores
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="edadesLectoresChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Autores Más Pedidos
+                </div>
+                <div class="card-body">
+                    <div class="chart-container-2">
+                        <canvas id="autoresMasPedidosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 {% endblock %}
 
 {% block scripts %}
@@ -80,30 +100,26 @@
                 });
         }
 
-        // Función para renderizar un gráfico utilizando Chart.js
         function renderChart(canvasId, labels, data, label, type) {
-            var ctx = document.getElementById(canvasId).getContext('2d');
-            new Chart(ctx, {
-                type: type,
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        backgroundColor: type === 'pie' ? getRandomColors(data.length) : 'rgba(54, 162, 235, 0.2)',
-                        borderColor: type === 'pie' ? getRandomColors(data.length) : 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+    var ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: type, // Utiliza chartType en lugar de type
+        data: {
+            labels: labels,
+            datasets: [{
+                label: label,
+                data: data,
+                backgroundColor: type === 'pie' ? getRandomColors(data.length) : 'rgba(54, 162, 235, 0.2)',
+                borderColor: type === 'pie' ? getRandomColors(data.length) : 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+           
         }
+    });
+}
 
         // Función para generar colores aleatorios
         function getRandomColors(count) {

@@ -28,6 +28,7 @@ def book():
 @app.route('/estadisticas')
 def estadisticas():
     return render_template('estadisticas.html')
+    
 @app.route('/api/usuarios', methods=['GET'])
 def get_usuarios():
     page = int(request.args.get('page', 1))
@@ -35,26 +36,39 @@ def get_usuarios():
     skip = (page - 1) * limit
 
     search_query = request.args.get('search_query', '').strip()
-    projection = {"LIBROS_PRESTADOS": 1, "NOMBRE": 1, "CORREO": 1}  # Project only necessary fields
 
     query = {}
     if search_query:
-        query["$or"] = [{"NOMBRE": {"$regex": search_query, "$options": "i"}}, {"CORREO": {"$regex": search_query, "$options": "i"}}]
+        regex_query = {"$regex": search_query, "$options": "i"}
+        query["$or"] = [{"NOMBRE": regex_query}, {"CORREO": regex_query}]
 
-    usuarios_cursor = usuarios.find(query, projection).skip(skip).limit(limit)
+    # Consulta los usuarios con detalles de libros prestados
+    usuarios_cursor = usuarios.aggregate([
+        {"$match": query},
+        {"$project": {
+            "NOMBRE": 1,
+            "CORREO": 1,
+            "LIBROS_PRESTADOS": {
+                "$map": {
+                    "input": "$LIBROS_PRESTADOS",
+                    "as": "libro",
+                    "in": {
+                        "$mergeObjects": [
+                            {"$arrayElemAt": ["$libro", 0]},
+                            {"$arrayElemAt": [{"$filter": {
+                                "input": {"$objectToArray": "$$libro"},
+                                "cond": {"$ne": ["$$this.k", "_id"]}
+                            }}, 0]}
+                        ]
+                    }
+                }
+            }
+        }},
+        {"$skip": skip},
+        {"$limit": limit}
+    ])
+
     all_usuarios = list(usuarios_cursor)
-
-    # Obtener detalles de los libros prestados en una sola consulta
-    codigos_barras = [libro["COD_BARRAS"] for usuario in all_usuarios for libro in usuario['LIBROS_PRESTADOS']]
-    libros_info = libros.find({"COD_BARRAS": {"$in": codigos_barras}})
-    libros_dict = {libro["COD_BARRAS"]: libro for libro in libros_info}
-
-        # Reemplazar COD_BARRAS con detalles del libro en cada usuario utilizando una lista de comprensión
-    all_usuarios = [{
-        **usuario,
-        'LIBROS_PRESTADOS': [libros_dict.get(libro["COD_BARRAS"]) for libro in usuario['LIBROS_PRESTADOS'] if libros_dict.get(libro["COD_BARRAS"])]
-    } for usuario in all_usuarios]
-
     return dumps(all_usuarios)
 
 @app.route('/api/libros', methods=['GET'])
@@ -64,13 +78,14 @@ def get_libros():
     skip = (page - 1) * limit
 
     search_query = request.args.get('search_query', '').strip()
-    projection = {"_id": 0}  # Exclude _id field from result
 
     query = {}
     if search_query:
-        query["$or"] = [{"TITULO": {"$regex": search_query, "$options": "i"}}, {"AUTOR": {"$regex": search_query, "$options": "i"}}]
+        regex_query = {"$regex": search_query, "$options": "i"}
+        query["$or"] = [{"TITULO": regex_query}, {"AUTOR": regex_query}]
 
-    libros_cursor = libros.find(query, projection).skip(skip).limit(limit)
+    # Consulta de libros
+    libros_cursor = libros.find(query).skip(skip).limit(limit)
     all_libros = list(libros_cursor)
 
     return dumps(all_libros)

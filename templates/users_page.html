@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios - Biblioteca{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos adicionales para la página de búsqueda de usuarios */
+
+body {
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    color: white;
+}
+
+h1, h2 {
+    color: white;
+}
+
+.input-group .form-control {
+    border-radius: 0;
+}
+
+.input-group .btn-outline-light {
+    border-radius: 0;
+    border-color: #fff;
+    color: #fff;
+}
+
+.input-group .btn-outline-light:hover {
+    background-color: #fff;
+    color: #6a11cb;
+}
+
+#usuarios-list .usuario-item {
+    background-color: #343a40;
+    color: #fff;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border: none;
+    padding: 15px;
+}
+
+#usuarios-list .usuario-link {
+    color: #fff;
+    text-decoration: none;
+}
+
+#usuarios-list .libros-prestados li {
+    background-color: #454d55;
+    color: #fff;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+}
+
+#loading {
+    display: none;
+}
+
+.spinner-border {
+    color: #fff;
+}
+
+</style>
+    <div class="container mt-4">
+        <h1 class="text-center text-white">Buscar Usuarios</h1>
+        <div class="input-group mb-3 mt-4">
+            <input type="text" id="search-bar" class="form-control" placeholder="Buscar por nombre o correo">
+            <div class="input-group-append">
+                <button class="btn btn-outline-light" type="button" id="search-button">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+        </div>
+        <h2 class="text-center text-white">Usuarios y sus libros prestados</h2>
+        <ul id="usuarios-list" class="list-group"></ul>
+        <div id="loading" class="text-center text-white mt-4" style="display: none;">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let page = 1;
+        const limit = 30;
+        let loading = false;
+
+        async function loadUsuarios() {
+            if (loading) return;
+            loading = true;
+
+            const searchQuery = document.getElementById('search-bar').value.trim();
+            const response = await fetch(`/api/usuarios?page=${page}&limit=${limit}&search_query=${searchQuery}`);
+            const usuarios = await response.json();
+            const usuariosList = document.getElementById('usuarios-list');
+
+            usuarios.forEach(usuario => {
+                const li = document.createElement('li');
+                li.classList.add('list-group-item', 'usuario-item');
+                const librosList = usuario.LIBROS_PRESTADOS.map(libro => `
+                    <li>
+                        <strong>Título:</strong> ${libro.TITULO}<br>
+                        <strong>Edición:</strong> ${libro.EDICION}<br>
+                        <strong>Autor:</strong> ${libro.AUTOR}
+                    </li>
+                `).join('');
+                li.innerHTML = `
+                    <a href="#" class="usuario-link text-white">
+                        <strong>${usuario.NOMBRE}</strong> (${usuario.CORREO}) <i class="fas fa-chevron-down"></i>
+                    </a>
+                    <ul class="libros-prestados" style="display: none;">${librosList}</ul>`;
+                usuariosList.appendChild(li);
+            });
+
+            page++;
+            loading = false;
+
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Load more usuarios when scrolling to the bottom
+        window.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            if (scrollTop + clientHeight >= scrollHeight - 5 && !loading) {
+                document.getElementById('loading').style.display = 'block';
+                loadUsuarios();
+            }
+        });
+
+        document.getElementById('search-button').addEventListener('click', () => {
+            page = 1; // Reset page number when performing a new search
+            document.getElementById('usuarios-list').innerHTML = ''; // Clear existing list
+            loadUsuarios();
+        });
+
+        // Toggle libros prestados list
+        document.getElementById('usuarios-list').addEventListener('click', (e) => {
+            if (e.target.classList.contains('usuario-link')) {
+                e.preventDefault();
+                const librosList = e.target.nextElementSibling;
+                librosList.style.display = librosList.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+
+        // Initial load when page loads
+        loadUsuarios();
+    </script>
+{% endblock %}

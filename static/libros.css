@@ -1,0 +1,42 @@
+/* Estilos adicionales para la página de listado de libros */
+
+body {
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    color: white;
+}
+
+h1, h2 {
+    color: white;
+}
+
+.input-group .form-control {
+    border-radius: 0;
+}
+
+.input-group .btn-outline-light {
+    border-radius: 0;
+    border-color: #fff;
+    color: #fff;
+}
+
+.input-group .btn-outline-light:hover {
+    background-color: #fff;
+    color: #6a11cb;
+}
+
+#libros-list .libro-item {
+    background-color: #343a40;
+    color: #fff;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border: none;
+    padding: 15px;
+}
+
+#loading {
+    display: none;
+}
+
+.spinner-border {
+    color: #fff;
+}

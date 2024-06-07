@@ -1,0 +1,47 @@
+/* Estilos adicionales */
+
+.navbar-nav {
+    margin-left: auto; /* Mueve el menú a la derecha */
+}
+
+.navbar-nav .nav-link {
+    padding: 10px 20px;
+}
+
+.footer {
+    background-color: #343a40;
+    color: #fff;
+    text-align: center;
+    padding: 20px 0;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+.jumbotron {
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    color: white;
+    padding: 2rem 1rem;
+}
+
+.card {
+    margin-bottom: 20px;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card .card-body {
+    padding: 2rem;
+}
+
+.carousel-inner img {
+    height: 400px;
+    object-fit: cover;
+}
+
+.carousel-caption {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    border-radius: 10px;
+}

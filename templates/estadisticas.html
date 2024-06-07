@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Estadísticas de la Biblioteca
+{% endblock %}
+
+{% block content %}
+    <style>
+        .chart-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        body {
+            background-color: #f8f9fa;  /* Light grey background for the whole page */
+        }
+
+
+.card {
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: bold;
+}
+
+.canvas-container {
+    position: relative;
+    height: 40vh;
+    width: 80vw;
+}
+    </style>
+    <div class="container">
+        <h1>Estadísticas de la Biblioteca</h1>
+        <div class="chart-container">
+            <canvas id="librosMasPedidosChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="edadesLectoresChart"></canvas>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Función para obtener datos de la API y renderizar gráficos
+        function fetchAndRenderCharts(endpoint, canvasId, label, type) {
+            fetch(endpoint)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Data obtenida:", data);
+                    var labels, counts;
+                    if (data.librosMasPedidos) {
+                        labels = data.librosMasPedidos.map(libro => libro.titulo);
+                        counts = data.librosMasPedidos.map(libro => libro.count);
+                    } else if (data.edadesLectores) {
+                        labels = data.edadesLectores.ageRanges;
+                        counts = data.edadesLectores.counts;
+                    }
+                    renderChart(canvasId, labels, counts, label, type);
+                })
+                .catch(error => {
+                    console.error('Error al obtener los datos:', error);
+                });
+        }
+
+        // Función para renderizar un gráfico utilizando Chart.js
+        function renderChart(canvasId, labels, data, label, type) {
+            var ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: type === 'pie' ? getRandomColors(data.length) : 'rgba(54, 162, 235, 0.2)',
+                        borderColor: type === 'pie' ? getRandomColors(data.length) : 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Función para generar colores aleatorios
+        function getRandomColors(count) {
+            var colors = [];
+            for (var i = 0; i < count; i++) {
+                colors.push('#' + Math.floor(Math.random() * 16777215).toString(16));
+            }
+            return colors;
+        }
+
+        // Llamar a las funciones para obtener datos y renderizar gráficos
+        fetchAndRenderCharts('/api/libros_mas_pedidos', 'librosMasPedidosChart', 'Libros Más Pedidos', 'bar');
+        fetchAndRenderCharts('/api/edades_lectores', 'edadesLectoresChart', 'Edades de los Lectores', 'pie');
+    </script>
+{% endblock %}

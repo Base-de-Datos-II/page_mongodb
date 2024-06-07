@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Libros - Biblioteca{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos adicionales para la página de listado de libros */
+
+body {
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    color: white;
+}
+
+h1, h2 {
+    color: white;
+}
+
+.input-group .form-control {
+    border-radius: 0;
+}
+
+.input-group .btn-outline-light {
+    border-radius: 0;
+    border-color: #fff;
+    color: #fff;
+}
+
+.input-group .btn-outline-light:hover {
+    background-color: #fff;
+    color: #6a11cb;
+}
+
+#libros-list .libro-item {
+    background-color: #343a40;
+    color: #fff;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border: none;
+    padding: 15px;
+}
+
+#loading {
+    display: none;
+}
+
+.spinner-border {
+    color: #fff;
+}
+
+</style>
+    <div class="container mt-4">
+        <h1 class="text-center text-white">Buscar Libros</h1>
+        <div class="input-group mb-3 mt-4">
+            <input type="text" id="search-bar" class="form-control" placeholder="Buscar por título o autor">
+            <div class="input-group-append">
+                <button class="btn btn-outline-light" type="button" id="search-button">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+        </div>
+        <h2 class="text-center text-white">Listado de Libros</h2>
+        <ul id="libros-list" class="list-group"></ul>
+        <div id="loading" class="text-center text-white mt-4" style="display: none;">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let page = 1;
+        const limit = 30;
+        let loading = false;
+
+        async function loadLibros() {
+            if (loading) return;
+            loading = true;
+
+            const searchQuery = document.getElementById('search-bar').value.trim();
+            const response = await fetch(`/api/libros?page=${page}&limit=${limit}&search_query=${searchQuery}`);
+            const libros = await response.json();
+            const librosList = document.getElementById('libros-list');
+
+            libros.forEach(libro => {
+                const li = document.createElement('li');
+                li.classList.add('list-group-item', 'libro-item');
+                li.innerHTML = `
+                    <strong>Título:</strong> ${libro.TITULO}<br>
+                    <strong>Edición:</strong> ${libro.EDICION}<br>
+                    <strong>Autor:</strong> ${libro.AUTOR}<br>
+                    <strong>Editorial:</strong> ${libro.EDITORIAL}<br>
+                    <strong>ISBN/ISSN:</strong> ${libro.ISBN_ISSN}<br>
+                    <strong>Tipo de Ejemplar:</strong> ${libro.TIPO_EJEMPLAR}
+                `;
+                librosList.appendChild(li);
+            });
+
+            page++;
+            loading = false;
+
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Load more libros when scrolling to the bottom
+        window.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            if (scrollTop + clientHeight >= scrollHeight - 5 && !loading) {
+                document.getElementById('loading').style.display = 'block';
+                loadLibros();
+            }
+        });
+
+        document.getElementById('search-button').addEventListener('click', () => {
+            page = 1; // Reset page number when performing a new search
+            document.getElementById('libros-list').innerHTML = ''; // Clear existing list
+            loadLibros();
+        });
+
+        // Initial load when page loads
+        loadLibros();
+    </script>
+{% endblock %}

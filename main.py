@@ -50,10 +50,6 @@ def get_top_authors():
     ]
     resultados = list(usuarios.aggregate(pipeline))
     
-    # Imprimir los autores más pedidos como texto en la consola del servidor
-    for autor in resultados:
-        print(f"Autor: {autor['_id']}, Cantidad: {autor['count']}")
-    
     # Devolver una respuesta JSON con los resultados
     return jsonify({"autoresMasPedidos": resultados})
 
